@@ -411,11 +411,14 @@ add_action('WeixinDev.message', function($input){
 				});
 				$data = array();
 				foreach ($matches[1] as $k => $match) {
+					$match = str_replace("\r\n", "\n", $match);
 					if(($i = strpos($match, "推荐答案")) !== false){ //有推荐答案
 						$start = $i+strlen("推荐答案");
 						$length = strrpos($match, '。')-$start;
 						if($length <= 0)
 							$length = strrpos($match, '...')-$start;
+						if($length <= 0)
+							$length = strpos($match, "[详细]")-$start-3;
 						if($length > 0){
 							$sendContent = trim(substr($match, $start, $length+3));
 						}else{
@@ -425,7 +428,6 @@ add_action('WeixinDev.message', function($input){
 					}else{
 						$match = ltrim(substr($match, strpos($match, '">')+2)) ?: $match;
 						$title = rtrim(substr($match, 0, strpos($match, "\n")+1));
-						$match = str_replace("\r\n", "\n", $match);
 						$i = strpos($match, '答：');
 						if($i !== false){ //获取网友回答
 							$match = substr($match, $i+strlen("答："));
