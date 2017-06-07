@@ -2,7 +2,8 @@
 if(__SCRIPT__ == 'mod.php' && session_status() != PHP_SESSION_ACTIVE)
 	session_start(); //启动会话
 
-$WxConf = load_config_file('weixin-config.php');
+$WxConf = load_config_file('weixin-config.php'); //配置
+$WxRes = load_config_file('weixin-response.php'); //响应数据
 WeixinDev::$url = $WxConf['url'];
 WeixinDev::$token = $WxConf['token'];
 WeixinDev::$appId = $WxConf['appId'];
@@ -364,8 +365,8 @@ add_action('WeixinDev.message', function($input){
 	$recvContent = &$input['recv']['Content'];
 	$sendContent = &$input['send']['Content'];
 	if(($input['send']['MsgType'] == 'text' && $sendContent) || !empty($input['send']['Articles'])) return;
-	$conf = load_config_file('weixin-response.php'); //本地答案配置
-	$keys = array_keys($conf);
+	global $WxRes;
+	$keys = array_keys($WxRes);
 	if(!str_contents($recvContent, $keys) || !rand(0, 3)){ // 1/4 概率忽略本地答案而从百度获取
 		// 获取关键字
 		if(!rand(0, 3) && preg_match('/什么叫做(.*)/', $recvContent, $match)){

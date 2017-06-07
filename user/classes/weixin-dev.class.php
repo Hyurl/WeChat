@@ -102,7 +102,9 @@ class WeixinDev extends mod{
 	 * @return none
 	 */
 	static function response(array $input){
-		$response = load_config_file("weixin-response.php"); //本地答案配置
+		global $WxRes;
+		if(!$WxRes)
+			$WxRes = load_config_file('weixin-response.php');
 		$responseMsgArray = array(
 			'ToUserName' => $input['FromUserName'],
 			'FromUserName' => $input['ToUserName'],
@@ -112,10 +114,10 @@ class WeixinDev extends mod{
 			);
 		if($input['MsgType'] == 'event'){
 			if($input['Event'] == 'subscribe'){
-				$responseMsgArray['Content'] = $response['subscribeReply'];
+				$responseMsgArray['Content'] = $WxRes['subscribeReply'];
 			}
 		}elseif($input['MsgType'] != 'text' && $input['MsgType'] != 'voice'){ //仅支持文本何语言消息
-			$responseMsgArray['Content'] = $response['invalidMsgType'];
+			$responseMsgArray['Content'] = $WxRes['invalidMsgType'];
 		}else{
 			self::setHistory($input['FromUserName'], isset($input['Recognition']) ? $input['Recognition'] : $input['Content']);
 			$input['Content'] = $input['MsgType'] != 'voice' ? trim($input['Content']) : trim($input['Recognition']);
@@ -128,7 +130,7 @@ class WeixinDev extends mod{
 				unset($responseMsgArray['Content']);
 			}elseif(!$responseMsgArray['Content']){
 				$responseArray = array();
-				foreach ($response as $key => $value) { //从本地配置中获取答案
+				foreach ($WxRes as $key => $value) { //从本地配置中获取答案
 					if(strpos($input['Content'], $key) !== false){
 						$responseArray[] = $value;
 					}
@@ -141,11 +143,11 @@ class WeixinDev extends mod{
 		}
 		if($replyText) $responseMsgArray['Content'] = trim($responseMsgArray['Content']);
 		if($replyText && !$responseMsgArray['Content']){ //无回复消息时提示
-			$noData = $response['noMatchedData'];
+			$noData = $WxRes['noMatchedData'];
 			$responseMsgArray['Content'] = $noData[rand(0, count($noData)-1)];
 		}
 		if($replyText && strlen($responseMsgArray['Content']) > 2048){ //回复消息不能超过 2048 字节
-			$responseMsgArray['Content'] = $response['dataOutLimit'];
+			$responseMsgArray['Content'] = $WxRes['dataOutLimit'];
 		}
 		return array2xml($responseMsgArray, true); //返回 xml 数据
 	}
