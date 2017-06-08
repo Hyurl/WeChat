@@ -10,6 +10,28 @@ WeixinDev::$appId = $WxConf['appId'];
 WeixinDev::$appSecret = $WxConf['appSecret'];
 
 /**
+ * ask 和系统进行对话
+ * @param  string $text 文本消息
+ * @return string|array 回复内容
+ */
+function ask($text){
+	$arg = array (
+		'ToUserName' => 'emulator',
+		'FromUserName' => 'emulator',
+		'CreateTime' => time(),
+		'MsgType' => 'text',
+		'Content' => $text,
+		'MsgId' => '6429271747111928740',
+	);
+	$result = WeixinDev::response($arg);
+	if($result['MsgType'] == 'text'){
+		return $result['Content'];
+	}else{
+		return $result['Articles'];
+	}
+}
+
+/**
  * str_contents() 判断字符串中是否包含指定的字符串
  * @param  string       $str      待检测的字符串
  * @param  string|array $contents 子字符串列表
@@ -220,7 +242,7 @@ add_action('WeixinDev.message', function($input){
 				$PicUrl = @$data[$i]['mthumbs'][0] ?: $data[$i]['thumb'];
 				$input['send']['Articles']['item'][] = array( //图文消息列表
 					'Title'=>$data[$i]['title'],
-					'Description'=>$data[$i]['mintro'],
+					'Description'=>@$data[$i]['mintro'] ?: '',
 					'PicUrl'=>$PicUrl,
 					'Url'=>$data[$i]['url'],
 				);
@@ -431,7 +453,7 @@ add_action('WeixinDev.message', function($input){
 		}
 		if(!$sendContent || !rand(0,3)){ // 1/4 概率摒弃百度百科答案而从百度知道获取
 			$level = rand(0,2);
-			$strcmp = rand(0, 3);
+			$strcmp = !rand(0, 3);
 			$data = array();
 			if($level){ //百度知道
 				$wd = trim($wd);
@@ -465,7 +487,7 @@ add_action('WeixinDev.message', function($input){
 								$match = trim(substr($match, 0, strpos($match, "\n\n"))); //获取回答
 								if(strpos($match, '你好， 3.0版本') !== 0 && strpos($match, 'Du知道君是') !== 0){ //只使用有效回答
 									if(strlen($match) > 3){ //只选择大于 1 个中文的答案
-										if(!$strcmp){
+										if($strcmp){
 											$index = abs(strcasecmp($title, $wd));
 											$data[$index] = $match;
 										}else{
@@ -477,7 +499,7 @@ add_action('WeixinDev.message', function($input){
 						}
 					}
 					if(!$sendContent && $data){
-						if(!$strcmp){
+						if($strcmp){
 							ksort($data);
 							$sendContent = array_shift($data);
 						}else{
@@ -503,7 +525,7 @@ add_action('WeixinDev.message', function($input){
 							$data[] = $A;
 						}
 					};
-					if(!$strcmp){
+					if($strcmp){
 						ksort($data);
 						$sendContent = array_shift($data);
 					}else{

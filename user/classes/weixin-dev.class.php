@@ -149,7 +149,7 @@ class WeixinDev extends mod{
 		if($replyText && strlen($responseMsgArray['Content']) > 2048){ //回复消息不能超过 2048 字节
 			$responseMsgArray['Content'] = $WxRes['dataOutLimit'];
 		}
-		return array2xml($responseMsgArray, true); //返回 xml 数据
+		return $responseMsgArray; //返回数组数据
 	}
 
 	/** 
