@@ -342,28 +342,35 @@ add_action('WeixinDev.message', function($input){
 			$city = substr($city, $i+6);
 		if(($j = strrpos($city, '今天的')) !== false || ($j = strrpos($city, '今日的')) !== false || ($j = strrpos($city, '今天')) !== false || ($j = strrpos($city, '今日')) !== false)
 			$city = substr($city, 0, $j);
+		if(($i = strpos($city, '明天')) === 0 || ($i = strpos($city, '明日')) === 0)
+			$city = substr($city, $i+6);
+		if(($j = strrpos($city, '明天的')) !== false || ($j = strrpos($city, '明日的')) !== false || ($j = strrpos($city, '明天')) !== false || ($j = strrpos($city, '明日')) !== false)
+			$city = substr($city, 0, $j);
 		if(!$city) $city = $match[1];
-		$cityCode = include(__dir__.'/city-code.php');
-		$weather = array();
-		if(isset($cityCode[$city])){
-			$arg = array(
-				'url'=>'http://www.weather.com.cn/data/cityinfo/'.$cityCode[$city].'.html',
-				'userAgent'=>'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-				'parseJSON'=>true,
-				);
-			$temp = curl($arg);
-			if(!curl_info('error')){
-				$weather = array_merge($weather, $temp['weatherinfo']);
+		$arg = array(
+			'url'=>'http://www.sojson.com/open/api/weather/json.shtml?city='.urlencode($city),
+			// 'userAgent'=>'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
+			'parseJSON'=>true,
+			);
+		$data = curl($arg);
+		if(!curl_info('error') && $data['status'] == 200){
+			$data = $data['data'];
+			array_walk($data['forecast'], function(&$data){
+				if($data['fengli'] == '微风级')
+					$data['fengli'] = '微风';
+				$data['text'] = $data['type'].'，'.$data['fengxiang'].$data['fengli'].'，最'.$data['low'].'，最'.$data['high'];
+			});
+			$forecast = array();
+			$forecast[] = $data['city'].'今日'.$data['forecast'][0]['text'].'，当前温度 '.$data['wendu'].'℃';
+			for($i=1; $i<=4; $i++){
+				if($i == 1){
+					$forecast[] = '明日'.$data['forecast'][$i]['text'];
+				}else{
+					$forecast[] = $data['forecast'][$i]['date'].$data['forecast'][$i]['text'];
+				}
 			}
-			$arg['url'] = 'http://www.weather.com.cn/data/sk/'.$cityCode[$city].'.html';
-			$wind = curl($arg);
-			if(!curl_info('error')){
-				$weather = array_merge($weather, $wind['weatherinfo']);
-			}
-			if($weather){
-				$sendContent = $weather['city'].'今日'.$weather['weather'].'，'.$weather['temp1'].' ~ '.$weather['temp2'].'，'.$weather['WD'].$weather['WS'].'。';
-				return $input;
-			}
+			$sendContent = join("；\n", $forecast)."。\n".$data['ganmao'];
+			return $input;
 		}
 	}elseif(str_contents($recvContent, array('我在哪','我的位置')) && $WxConf['baiduMapKey']){
 		// 图文消息
