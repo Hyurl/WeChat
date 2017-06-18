@@ -14,11 +14,10 @@ require_once('mod/common/init.php');
 
 /** 具体逻辑 */
 $SOCKET_INFO = $SOCKET_USER = array(); //保存连接信息的全局变量
-SocketServer::$maxInput = config('mod.SocketServer.maxInput'); //设置最大传入字节数
 if(is_agent()){
 	if(php_sapi_name() == 'cgi-fcgi') //Socket 服务器不能通过 FastCGI 开启
 		report_500(lang('mod.socketFastCGIWarning'));
-	if(!is_admin()) report_403();
+	if(!config('mod.installed') || !is_admin()) report_403();
 }
 SocketServer::on('open', function($event){ //绑定连接事件
 	global $SOCKET_INFO, $SOCKET_USER;
@@ -34,12 +33,13 @@ SocketServer::on('open', function($event){ //绑定连接事件
 	$SOCKET_INFO[$srcId] = array( //保存连接信息到内存中
 		'request_headers' => $event['request_headers'], //请求头
 		'session_id' => session_id(), //会话 ID
-		'user_id' => me_id() //用户 ID
+		'user_id' => config('mod.installed') ? me_id() : 0, //用户 ID
 		);
 })->on('message', function($event){ //绑定消息事件
 	global $SOCKET_INFO, $SOCKET_USER, ${'DENIES'.__TIME__};
+	$installed = config('mod.installed');
 	do_hooks('socket.message', $event);
-	if(error()) if(error()) goto sendResult;
+	if(error()) goto sendResult;
 	$data = json_decode($event['data'], true);
 	conv_request_vars($data); //转义参数
 	$_GET['obj'] = @$data['obj'];
@@ -62,7 +62,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 		}
 		$_SERVER['HTTP_REFERER'] = @$data['HTTP_REFERER'] ?: ''; //设置来路页面
 		$init = array('__DISPLAY__' => null);
-		if(config('mod.installed')){
+		if($installed){
 			do_hooks('mod.init', $init); //系统初始化接口
 			if(error()) goto sendResult;
 		}
@@ -89,16 +89,16 @@ SocketServer::on('open', function($event){ //绑定连接事件
 	if(!$SOCKET_INFO[$srcId]['session_id'])
 		$SOCKET_INFO[$srcId]['session_id'] = session_id();
 	if(!$SOCKET_INFO[$srcId]['user_id'])
-		$SOCKET_INFO[$srcId]['user_id'] = me_id();
+		$SOCKET_INFO[$srcId]['user_id'] = $installed ? me_id() : 0;
 	if(($obj == 'mod' || is_subclass_of($obj, 'mod')) && (method_exists($obj, $act) || is_callable(hooks($obj.'.'.$act))) && !in_array($obj.'::'.strtolower($act), ${'DENIES'.__TIME__})){
-		$uid = me_id();
+		$uid = $installed ? me_id() : 0;
 		sendResult:
 		if(!error()) do_hooks('mod.client.call', $data);
 		$result = error() ?: $obj::$act($data);
 		$result = array_merge($result, array('obj'=>$_GET['obj'], 'act'=>$_GET['act']));
 		//调用类方法并将结果发送给客户端
 		SocketServer::send(json_encode($result)); //发送 JSON 结果
-		if($obj == 'user' && $result['success']){
+		if($installed && $obj == 'user' && $result['success']){
 			if(!strcasecmp('login', $act)){ //登录操作
 				$uid = $result['data']['user_id'];
 				if(!isset($SOCKET_USER[$uid])) $SOCKET_USER[$uid] = array();
@@ -113,7 +113,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 			$SOCKET_INFO[$srcId]['session_id'] = session_id();
 			$SOCKET_INFO[$srcId]['user_id'] = me_id();
 		}
-	}elseif(!$obj && !$act && @$data[$sname] == session_id()){
+	}elseif($installed && !$obj && !$act && @$data[$sname] == session_id()){
 		SocketServer::send(json_encode(user::getMe())); //重现会话操作，将登录用户的信息发送给客户端
 	}else{
 		forbidden:
@@ -126,7 +126,7 @@ SocketServer::on('open', function($event){ //绑定连接事件
 	do_hooks('socket.close', $event);
 	$srcId = (int)$event['client'];
 	if(!empty($SOCKET_INFO[$srcId]['user_id'])){ //如果用户已登录，则清除登录信息
-		$uid = me_id() ?: $SOCKET_INFO[$srcId]['user_id'];
+		$uid = $SOCKET_INFO[$srcId]['user_id'];
 		$i = array_search($event['client'], $SOCKET_USER[$uid]);
 		if($i !== false) unset($SOCKET_USER[$uid][$i]);
 		if(!$SOCKET_USER[$uid]) unset($SOCKET_USER[$uid]);
@@ -135,15 +135,15 @@ SocketServer::on('open', function($event){ //绑定连接事件
 });
 if(!file_exists($file = __ROOT__.'.socket-server')) file_put_contents($file, 'on');
 if(!SocketServer::server()){
+	$STDOUT = lang('mod.socketOnTip');
+	if($encoding = get_cmd_encoding())
+		$STDOUT = iconv('UTF-8', $encoding, $STDOUT) ?: $STDOUT;
 	$file = fopen($file, 'r');
 	if(!flock($file, LOCK_EX | LOCK_NB)){ //通过检测 .socket-server 文件是否被加锁来判断 Socket 服务器是否在运行
 		is_agent() ? report_500($STDOUT) : exit($STDOUT."\n");
 	}
 	//启动监听
-	SocketServer::listen(@$_SERVER['argv'][1] ?: config('mod.SocketServer.port'), function($socket){
-		$STDOUT = lang('mod.socketOnTip');
-		if($encoding = get_cmd_encoding())
-			$STDOUT = iconv('UTF-8', $encoding, $STDOUT) ?: $STDOUT;
+	SocketServer::listen(@$_SERVER['argv'][1] ?: config('mod.SocketServer.port'), function($socket) use($STDOUT){
 		if(!is_agent()) fwrite(STDOUT, $STDOUT."\n");
 	});
 }
