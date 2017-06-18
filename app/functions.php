@@ -422,7 +422,7 @@ add_action('WeixinDev.message', function($input){
 		// 获取关键字
 		if(!rand(0, 3) && preg_match('/什么叫做(.*)/', $recvContent, $match)){
 			$wd = rtrim($match[1], '吗么麽吧啊？。');
-		}elseif(preg_match('/(什么叫|什么是|啥叫|啥是|谁是|哪个是|介绍一下)(.*)/', $recvContent, $match)){
+		}elseif(preg_match('/(什么叫|什么是|啥叫|啥是|谁是|哪个是|介绍一下|解释一下|定义一下)(.*)/', $recvContent, $match)){
 			$wd = rtrim($match[2], '吗么麽吧啊？。');
 		}elseif(preg_match('/(知道|了解|认识|听说过|晓得|懂|会|看过|见过)(.*)(吗|么|麽|吧|啊)/U', $recvContent, $match)){
 			$wd = $match[2];
