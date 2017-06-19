@@ -50,6 +50,13 @@ function str_contents($str, $contents, $case = false){
 if(file_exists($file = __dir__.'/extra.func.php'))
 	include $file; //载入额外程序
 
+add_action('console.open', function(){
+	global $PROMPT, $TITLE;
+	$PROMPT = '>>> ';
+	$TITLE = 'WeChat Emulator';
+	fwrite(STDOUT, "Type \"ask <something>\" to get knowledge.\n");
+});
+
 /** 查询四六级成绩 */
 add_action('WeixinDev.message', function($input){
 	$recvContent = &$input['recv']['Content'];
