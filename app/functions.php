@@ -51,8 +51,7 @@ if(file_exists($file = __dir__.'/extra.func.php'))
 	include $file; //载入额外程序
 
 add_action('console.open', function(){
-	global $PROMPT, $TITLE;
-	$PROMPT = '>>> ';
+	global $TITLE;
 	$TITLE = 'WeChat Emulator';
 	fwrite(STDOUT, "Type \"ask <something>\" to get knowledge.\n");
 });
