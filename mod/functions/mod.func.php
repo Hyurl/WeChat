@@ -1136,6 +1136,11 @@ function get_module_funcs($module = ''){
 }
 
 if(!function_exists('mime_content_type')):
+/**
+ * mime_content_type() 获取一个文件的 MIME 类型
+ * @param  string $filename 文件名
+ * @return string           文件的 MIME 类型，如果没有匹配，则返回空字符串
+ */
 function mime_content_type($filename){
 	static $mime = array();
 	if(!$mime) $mime = load_config('mime.ini'); //加载 mime 类型扩展
