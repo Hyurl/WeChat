@@ -9,6 +9,9 @@ WeixinDev::$token = $WxConf['token'];
 WeixinDev::$appId = $WxConf['appId'];
 WeixinDev::$appSecret = $WxConf['appSecret'];
 
+$userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36';
+$userAgentMobile = 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1';
+
 /**
  * ask 和系统进行对话
  * @param  string $text 文本消息
@@ -232,7 +235,7 @@ add_action('WeixinDev.message', function($input){
 		$url = 'https://cre.dp.sina.cn/api/v3/get?cateid=1o&cre=tianyi&mod=wnews&merge=3&statics=1&length=20&tm=1489716199&ad={%22rotate_count%22:21,%22page_url%22:%22https%3A%2F%2Fnews.sina.cn%2F%22,%22channel%22:%22131250%22,%22platform%22:%22wap%22,%22timestamp%22:1496916969233}&action=0&up=0&down=0&length=18&_=1496916969251';
 		$arg = array(
 			'url'=>$url,
-			'userAgent'=>'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
+			'userAgent'=>$GLOBALS['userAgentMobile'],
 			'followLocation'=>1,
 			'parseJSON'=>true,
 			);
@@ -267,7 +270,7 @@ add_action('WeixinDev.message', function($input){
 		$baseUrl = 'https://mdianying.baidu.com';
 		$result = curl(array( //CURL 请求
 			'url'=>$baseUrl,
-			'userAgent'=>'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
+			'userAgent'=>$GLOBALS['userAgentMobile'],
 			'followLocation'=>1,
 			));
 		if(!curl_info('error') && preg_match_all('/href="\/movie\/detail\?movieId=([\s\S]*)<\/a>/Ui', $result, $matches)){ //获取电影列表
@@ -324,7 +327,7 @@ add_action('WeixinDev.message', function($input){
 								'__VIEWSTATE'=>$match[1],
 								'__EVENTVALIDATION'=>$_match[1]
 								),
-							'userAgent'=>'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.113 Safari/537.36',
+							'userAgent'=>$GLOBALS['userAgent'],
 							));
 						if(preg_match_all('/<em>(\S*)<\/em>/U', $html, $match) && count($match[1]) == 2){
 							$sendContent = "解密结果为: ".$match[1][1];
@@ -377,7 +380,6 @@ add_action('WeixinDev.message', function($input){
 		if(!$city) $city = $match[1];
 		$arg = array(
 			'url'=>'http://www.sojson.com/open/api/weather/json.shtml?city='.urlencode($city),
-			// 'userAgent'=>'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13B143 Safari/601.1',
 			'parseJSON'=>true,
 			);
 		$data = curl($arg);
@@ -428,7 +430,7 @@ add_action('WeixinDev.message', function($input){
 		// 获取关键字
 		if(!rand(0, 3) && preg_match('/什么叫做(.*)/', $recvContent, $match)){
 			$wd = rtrim($match[1], '吗么麽吧啊？。');
-		}elseif(preg_match('/(什么叫|什么是|啥叫|啥是|谁是|哪个是|介绍一下|解释一下|定义一下)(.*)/', $recvContent, $match)){
+		}elseif(preg_match('/(什么叫|什么是|啥叫|啥是|谁是|哪个是|介绍一下|解释一下|定义一下|定义|解释|介绍)(.*)/', $recvContent, $match)){
 			$wd = rtrim($match[2], '吗么麽吧啊？。');
 		}elseif(preg_match('/(知道|了解|认识|听说过|晓得|懂|会|看过|见过)(.*)(吗|么|麽|吧|啊)/U', $recvContent, $match)){
 			$wd = $match[2];
@@ -438,108 +440,112 @@ add_action('WeixinDev.message', function($input){
 			$wd = $recvContent;
 		}
 		// 请求参数
+		$wd = trim($wd);
+		$_wd = urlencode($wd);
 		$arg = array(
-			'url'=>'http://baike.baidu.com/search/word?word='.urlencode(trim($wd)),
+			'url'=>'http://baike.baidu.com/search/word?word='.$_wd, //百度百科
 			'followLocation'=>5, //最多跟踪 5 次跳转
 			'requestHeaders'=>array(
 				'Accept'=>'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
 				'Referer'=>'https://www.baidu.com/',
-				'User-Agent'=>'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+				'User-Agent'=>$GLOBALS['userAgent'],
 				),
 			);
-		// 百度百科
-		if(($wd != $recvContent || !rand(0,3))) { // 1/4 概率会忽略配置而从百度百科获取知识
-			$data = curl($arg); //CURL 远程请求
-			if(!curl_info('error') && preg_match('/<meta name="description" content="(.*)">/U', $data, $match)){ //获取摘要
-				if(strpos($match[1], '百度百科') !== 0 && !strpos($match[1], '分享贡献你的知识'))
-					$sendContent = trim(substr($match[1], 0, strrpos($match[1], '。')+3)); //将摘要作为答案
-				if(strlen($sendContent) <= 3) //答案少于2中文长度则忽略
-					$sendContent = null;
-			}
+		$options = array($arg, $arg, $arg);
+		$options[1]['url'] = 'https://zhidao.baidu.com/search?pn=0&&rn=10&lm=0&fr=bks0000&word='.$_wd; //百度知道
+		$options[2]['url'] = 'http://wenda.so.com/search/?q='.$_wd; //360 问答
+		$curlData = curl($options); //并行发送请求并获取数据
+		$curlInfo = curl_info(); //获取 CURL 信息
+		$result = array("", "", ""); //最后结果
+		$strcmp = !rand(0, 3); // 1/4 进行二进制比较问题的概率
+		//处理百度百科数据
+		if(!$curlInfo[0]['error'] && preg_match('/<meta name="description" content="(.*)">/U', $curlData[0], $match)){
+			if(strpos($match[1], '百度百科') !== 0 && !strpos($match[1], '分享贡献你的知识'))
+				$result[0] = trim(substr($match[1], 0, strrpos($match[1], '。')+3)); //将摘要作为答案
+			if(strlen($result[0]) <= 3) //答案少于2中文长度则忽略
+				$result[0] = "";
 		}
-		if(!$sendContent || !rand(0,3)){ // 1/4 概率摒弃百度百科答案而从百度知道获取
-			$level = rand(0,2);
-			$strcmp = !rand(0, 3);
+		//处理百度知道数据
+		if(!$curlInfo[1]['error'] && preg_match_all('/<dl.*>([\s\S]*)<\/dl>/U', $curlData[1], $matches)){ //获取答案列表
 			$data = array();
-			if($level){ //百度知道
-				$wd = trim($wd);
-				$arg['url'] = 'http://zhidao.baidu.com/search?word='.urlencode($wd);
-				$result = curl($arg);
-				if(!curl_info('error') && preg_match_all('/<dl.*>([\s\S]*)<\/dl>/U', $result, $matches)){ //获取答案列表
-					array_walk($matches[1], function(&$v){
-						$v = trim(strip_tags($v)); //获取纯文本
-					});
-					foreach ($matches[1] as $k => $match) {
-						$match = str_replace("\r\n", "\n", $match);
-						if(($i = strpos($match, "推荐答案")) !== false){ //有推荐答案
-							$start = $i+strlen("推荐答案");
-							$length = strrpos($match, '。')-$start;
-							if($length <= 0)
-								$length = strrpos($match, '...')-$start;
-							if($length <= 0)
-								$length = strpos($match, "[详细]")-$start-3;
-							if($length > 0){
-								$sendContent = trim(substr($match, $start, $length+3));
-							}else{
-								$sendContent = trim(substr($match, $start));
-							}
-							break;
-						}else{
-							$match = ltrim(substr($match, strpos($match, '">')+2)) ?: $match;
-							$title = rtrim(substr($match, 0, strpos($match, "\n")+1));
-							$i = strpos($match, '答：');
-							if($i !== false){ //获取网友回答
-								$match = substr($match, $i+strlen("答："));
-								$match = trim(substr($match, 0, strpos($match, "\n\n"))); //获取回答
-								if(strpos($match, '你好， 3.0版本') !== 0 && strpos($match, 'Du知道君是') !== 0){ //只使用有效回答
-									if(strlen($match) > 3){ //只选择大于 1 个中文的答案
-										if($strcmp){
-											$index = abs(strcasecmp($title, $wd));
-											$data[$index] = $match;
-										}else{
-											$data[] = $match;
-										}
-									}
+			array_walk($matches[1], function(&$v){
+				$v = trim(strip_tags($v)); //获取纯文本
+			});
+			foreach ($matches[1] as $k => $match) {
+				$match = str_replace("\r\n", "\n", $match);
+				if(($i = strpos($match, "推荐答案")) !== false){ //有推荐答案
+					$start = $i+strlen("推荐答案");
+					$length = strrpos($match, '。')-$start;
+					if($length <= 0)
+						$length = strrpos($match, '...')-$start;
+					if($length <= 0)
+						$length = strpos($match, "[详细]")-$start-3;
+					if($length > 0){
+						$result[1] = trim(substr($match, $start, $length+3));
+					}else{
+						$result[1] = trim(substr($match, $start));
+					}
+					break;
+				}else{
+					$match = ltrim(substr($match, strpos($match, '">')+2)) ?: $match;
+					$title = rtrim(substr($match, 0, strpos($match, "\n")+1));
+					$i = strpos($match, '答：');
+					if($i !== false){ //获取网友回答
+						$match = substr($match, $i+strlen("答："));
+						$match = trim(substr($match, 0, strpos($match, "\n\n"))); //获取回答
+						if(strpos($match, '你好， 3.0版本') !== 0 && strpos($match, 'Du知道君是') !== 0){ //只使用有效回答
+							if(strlen($match) > 3){ //只选择大于 1 个中文的答案
+								if($strcmp){
+									$index = abs(strcasecmp($title, $wd));
+									$data[$index] = $match;
+								}else{
+									$data[] = $match;
 								}
 							}
 						}
 					}
-					if(!$sendContent && $data){
-						if($strcmp){
-							ksort($data);
-							$sendContent = array_shift($data);
-						}else{
-							$sendContent = $data[rand(0, count($data)-1)];
-						}
-					}
 				}
-			}else{ //360问答
-				$arg['url'] = 'http://wenda.so.com/search/?q='.urlencode($wd);
-				$result = curl($arg);
-				if(preg_match_all('/<li class="item">([\s\S]*)<\/li>/U', $result, $matches)){
-					foreach($matches[1] as $v){
-						$v = explode('<div class="qa-i-bd">', $v);
-						$v[0] = strip_tags($v[0]);
-						$v[1] = substr($v[1], 0, strpos($v[1], '<div class="qa-i-ft">'));
-						$v[1] = strip_tags($v[1]);
-						$Q = $v[0];
-						$A = $v[1];
-						if($strcmp){
-							$index = abs(strcasecmp($Q, $wd));
-							$data[$index] = $A;
-						}else{
-							$data[] = $A;
-						}
-					};
-					if($strcmp){
-						ksort($data);
-						$sendContent = array_shift($data);
-					}else{
-						$sendContent = $data[rand(0, count($data)-1)];
-					}
+			}
+			if($data){
+				if($strcmp){
+					ksort($data);
+					$result[1] = array_shift($data);
+				}else{
+					$result[1] = $data[rand(0, count($data)-1)];
 				}
 			}
 		}
+		//处理 360 问答数据
+		if(preg_match_all('/<li class="item">([\s\S]*)<\/li>/U', $curlData[2], $matches)){
+			$data = array();
+			foreach($matches[1] as $v){
+				$v = explode('<div class="qa-i-bd">', $v);
+				$v[0] = strip_tags($v[0]);
+				$v[1] = substr($v[1], 0, strpos($v[1], '<div class="qa-i-ft">'));
+				$v[1] = strip_tags($v[1]);
+				$Q = $v[0];
+				$A = $v[1];
+				if($strcmp){
+					$index = abs(strcasecmp($Q, $wd));
+					$data[$index] = $A;
+				}else{
+					$data[] = $A;
+				}
+			};
+			if($strcmp){
+				ksort($data);
+				$result[2] = array_shift($data);
+			}else{
+				$result[2] = $data[rand(0, count($data)-1)];
+			}
+		}
+		$level = rand(0, 3); // 获取相应答案的概率
+		if($result[0] && $level) //采纳百度百科答案
+			$sendContent = $result[0];
+		elseif($result[1] && $level > 1) //采纳百度知道答案
+			$sendContent = $result[1];
+		elseif($result[2]) //采纳 360 问答答案
+			$sendContent = $result[2];
 		return $input;
 	}
 });

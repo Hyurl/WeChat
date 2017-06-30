@@ -135,7 +135,7 @@ class WeixinDev extends mod{
 						$responseArray[] = $value;
 					}
 				}
-				$responseText = $responseArray[rand(0, count($responseArray)-1)]; //随机抽取一个回答
+				$responseText = @$responseArray[rand(0, count($responseArray)-1)]; //随机抽取一个回答
 				if(is_array($responseText)) //二维数组
 					$responseText = $responseText[rand(0, count($responseText)-1)];
 				$responseMsgArray['Content'] = $responseText;
