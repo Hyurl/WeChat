@@ -1,6 +1,6 @@
 <?php
 if(isset($_GET['action'])){
-	if($_GET['action'] == 'login'){
+	if($_GET['action'] == 'login' && !is_logined()){
 		$result = http_auth_login(); //HTTP 认证登录
 	}elseif($_GET['action'] == 'logout'){
 		$result = user::logout(); //登出
