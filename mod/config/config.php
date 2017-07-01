@@ -54,6 +54,7 @@ return array(
 			'staticURI' => 'page/{page}.html', //伪静态地址
 			),
 		'errorPage' => array( //错误页面设置(相对于模板目录)
+			401 => '401.php', //401 页面
 			403 => '403.php', //403 页面
 			404 => '404.php', //404 页面
 			500 => '500.php', //500 页面
