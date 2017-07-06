@@ -5,10 +5,11 @@ return array (
     'installed' => false,
     'language' => 'zh-CN',
     'timezone' => 'Asia/Shanghai',
-    'outputBuffering' => 0,
     'escapeTags' => '<script><style><iframe>',
     'pathinfoMode' => false,
     'jsonSerialize' => false,
+    'debug' => true,
+    'httpAuth' => false,
     'database' => 
     array (
       'type' => 'sqlite',
@@ -46,6 +47,7 @@ return array (
       'port' => 8080,
       'maxInput' => 8388608,
     ),
+    'outputBuffering' => 0,
     'cliCharset' => '',
     'WebSocket' => 
     array (
@@ -64,6 +66,7 @@ return array (
     ),
     'errorPage' => 
     array (
+      401 => '401.php',
       403 => '403.php',
       404 => '404.php',
       500 => '500.php',
@@ -95,6 +98,7 @@ return array (
     array (
       'minLength' => 5,
       'maxLength' => 18,
+      'encryptKey' => 'MODPHP',
     ),
     'level' => 
     array (
@@ -115,6 +119,7 @@ return array (
       'acceptTypes' => 'jpg|jpeg|png|gif|bmp',
       'maxSize' => 2048,
       'imageSizes' => '64|96|128',
+      'keepName' => true,
     ),
   ),
   'category' => 

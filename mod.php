@@ -1,5 +1,9 @@
 <?php
-require_once('mod/common/init.php');
+// ModPHP 压缩包名称，如果设置，ModPHP 将从 ZIP 中加载内核
+defined('MOD_ZIP') or define('MOD_ZIP', 'modphp.zip');
+
+require_once (MOD_ZIP ? 'zip://'.__DIR__.'/'.MOD_ZIP.'#' : '').'mod/common/init.php'; //引入初始化程序
+
 /*
  * URL 请求使说明：
  * 可以通过 URL 携带参数访问 mod.php 文件直接访问模块类方法，通常在 AJAX 中使用。
@@ -47,13 +51,13 @@ while(true){
 			ob_start();
 			if(!strpos($PARAM['cmd'], '(') && (is_callable($PARAM['cmd']) || strpos($PARAM['cmd'], '::'))) {
 				//将输入按 shell 命令来运行
-				${'SHELL'.__TIME__} = true;
-				array_walk($PARAM['args'], function(&$v){ //转换参数
+				${'SHELL'.INIT_TIME} = true;
+				foreach($PARAM['args'] as &$v){ //转换参数
 					if($v === 'true') $v = true;
 					elseif($v === 'false') $v = false;
 					elseif($v === 'undefined' || $v === 'null') $v = null;
 					elseif(is_numeric($v) && (int)$v < 2147483647) $v = (int)$v;
-				});
+				};
 				if(is_assoc($PARAM['args'])){ //关联数组参数
 					print_r(call_user_func($PARAM['cmd'], $PARAM['args']));
 				}elseif(is_array($PARAM['args'])){ //索引数组参数
@@ -71,8 +75,8 @@ while(true){
 				echo $STDOUT.PHP_EOL; //输出代命令行
 			}else{ //交互式控制台
 				if($STDIN && $STDOUT) fwrite(STDOUT, $STDOUT.PHP_EOL); //输出到交互式控制台
-				if(!isset(${'SHELL'.__TIME__})) break;
-				unset(${'SHELL'.__TIME__});
+				if(!isset(${'SHELL'.INIT_TIME})) break;
+				unset(${'SHELL'.INIT_TIME});
 			}
 		}
 		if($STDIN === null) break;

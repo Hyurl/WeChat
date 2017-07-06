@@ -1,4 +1,7 @@
 <?php
+delete_action('console.open.check_install'); //不检查安装状态
+delete_action('console.open.show_tip'); //不显示提示信息
+
 if(__SCRIPT__ == 'mod.php' && session_status() != PHP_SESSION_ACTIVE)
 	session_start(); //启动会话
 
