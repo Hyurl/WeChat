@@ -21,15 +21,9 @@ $userAgentMobile = 'Mozilla/5.0 (iPhone; CPU iPhone OS 9_1 like Mac OS X) AppleW
  * @return string|array 回复内容
  */
 function ask($text){
-	$arg = array (
-		'ToUserName' => 'emulator',
-		'FromUserName' => 'emulator',
-		'CreateTime' => time(),
-		'MsgType' => 'text',
-		'Content' => $text,
-		'MsgId' => '6429271747111928740',
-	);
-	$result = WeixinDev::response($arg);
+	$arg['Content'] = $text;
+	$result = WeixinDev::getResponse($arg);
+	$result = $result['data'];
 	if($result['MsgType'] == 'text'){
 		return $result['Content'];
 	}else{
@@ -563,4 +557,11 @@ add_action('WeixinDev.message', function($input){
 		$recvContent = '你好';
 	}
 	return $input;
+});
+
+add_action('mod.client.call.complete', function($result){
+	if(is_xml_request()){
+		set_content_type('text/xml');
+		exit(array2xml($result['data'], true));
+	}
 });
