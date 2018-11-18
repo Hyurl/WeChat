@@ -12,7 +12,7 @@ ModPHP 遵循 Apache 2.0 开源协议发布，该协议鼓励代码共享和尊�
 3. 再发行版本中必须带有原作协议、商标、专利申明和来自其他作者规定的其他申明；
 4. 你可以在再发行版本中增加自己的许可，但是不可表现为对本协议或者 Apache License 构成修改。
 
-Copyright 2016 李阿远(Ayon Lee) http://modphp.hyurl.com
+Copyright 2016 Ayon Lee http://modphp.hyurl.com
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
